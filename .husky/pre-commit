@@ -1,0 +1,3 @@
+git secrets --pre_commit_hook -- "$@"
+
+npx lint-staged
