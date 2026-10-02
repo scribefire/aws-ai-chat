@@ -6,6 +6,8 @@ interface ChatInputProps {
   initialModel?: string;
 }
 
+const DEFAULT_MODEL_ID = "anthropic.claude-haiku-4-5-20251001-v1:0";
+
 export default function ChatInput({
   sendMessage,
   initialModel,
@@ -21,7 +23,7 @@ export default function ChatInput({
 
   const models = [
     {
-      id: "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+      id: DEFAULT_MODEL_ID,
       name: "Claude Haiku 4.5 v1",
     },
     {
@@ -35,7 +37,7 @@ export default function ChatInput({
   ];
   const [message, setMessage] = useState("");
   const [selectedModel, setSelectedModel] = useState(
-    initialModel || models[0].id,
+    initialModel ?? DEFAULT_MODEL_ID,
   );
 
   return (
