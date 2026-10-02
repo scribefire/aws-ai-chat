@@ -6,7 +6,7 @@ interface ChatInputProps {
   initialModel?: string;
 }
 
-const DEFAULT_MODEL_ID = "anthropic.claude-haiku-4-5-20251001-v1:0";
+const DEFAULT_MODEL_ID = "amazon.nova-micro-v1:0";
 
 export default function ChatInput({
   sendMessage,
