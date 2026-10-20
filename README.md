@@ -1,69 +1,89 @@
-# React + TypeScript + Vite
+# AWS AI Chat
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AWS Bedrockを使って質問に回答する、React製のチャットアプリです。AWS Amplify Gen 2でメール認証とバックエンドを構成し、チャットの質問をBedrockへ送信します。
 
-Currently, two official plugins are available:
+## 主な機能
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- メールアドレスを使ったサインアップとサインイン
+- Bedrockのモデルを選んで質問を送信
+- チャット画面、メッセージ表示、サンプル会話一覧
 
-## Expanding the ESLint configuration
+## アーキテクチャ
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. Reactの画面はAmplify Authenticatorで認証を行います。
+2. `src/api/bedrock.ts` がAmplify Dataの `BedrockChat` クエリを呼び出します。
+3. AppSyncが認証済みユーザーのリクエストを `bedrockChat` Lambdaへ渡します。
+4. LambdaがAWS SDKのBedrock RuntimeクライアントとConverse APIでモデルを呼び出します。
 
-```js
-export default tseslint.config([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
+バックエンドの認証、データスキーマ、Lambda、BedrockのIAM権限は `amplify/` 以下で定義しています。
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+## 現在の実装状況
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+会話履歴の一覧と表示には `src/sampleData.ts` のサンプルデータを使用しています。画面から作成した会話もブラウザー内のメモリーにだけ保持されるため、ページを再読み込みすると消えます。バックエンドには `Conversation` と `Message` のデータモデルがありますが、現在の画面はそれらを読み書きしていません。
+
+## 技術スタック
+
+- React 19、TypeScript、Vite 7
+- AWS Amplify Gen 2（Auth、Data、Functions）
+- AWS AppSync、AWS Lambda、Amazon Bedrock Runtime
+- Tailwind CSS 4
+
+## ローカル開発
+
+### 必要なもの
+
+- Node.js 22.12以降
+- AWSアカウントと、Amplifyバックエンドをデプロイできる認証情報
+- 対象リージョンで利用可能なBedrockモデルへのアクセス
+
+### 起動
+
+依存パッケージをインストールします。
+
+```bash
+npm ci
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+AWS認証情報を設定した状態で、バックエンド用のサンドボックスを起動します。初回はAWS上に開発用バックエンドが作成され、フロントエンドが参照する `amplify_outputs.json` が生成されます。このファイルはGit管理対象外です。
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+```bash
+npx ampx sandbox
+```
 
-export default tseslint.config([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+サンドボックスの起動後、別のターミナルでフロントエンドを起動します。
+
+```bash
+npm run dev
+```
+
+AmplifyのサンドボックスはAWS上にリソースを作成します。AWS認証情報の設定方法は[Amplify Gen 2のアカウント設定](https://docs.amplify.aws/react/start/account-setup/)を、サンドボックスの詳細は[クラウドサンドボックスのガイド](https://docs.amplify.aws/react/deploy-and-host/sandbox-environments/setup/)を参照してください。
+
+## 開発コマンド
+
+| コマンド          | 内容                                         |
+| ----------------- | -------------------------------------------- |
+| `npm run dev`     | Viteの開発サーバーを起動                     |
+| `npm run build`   | TypeScriptのビルド確認と本番用ファイルの生成 |
+| `npm run preview` | 本番ビルドをローカルでプレビュー             |
+| `npm run lint`    | ESLintを実行                                 |
+
+## デプロイ
+
+`amplify.yml` はAWS Amplify Hostingのビルド設定です。`npx ampx pipeline-deploy` で対象ブランチのバックエンドをデプロイし、その後 `npm run build` で生成した `dist/` をフロントエンドとして公開します。Amplify Hostingにリポジトリとブランチを接続し、必要なAWS設定を行ってください。
+
+## ディレクトリ構成
+
+```text
+src/
+  api/                  Amplify DataクライアントとBedrock呼び出し
+  components/           チャット画面のレイアウトとUI
+  pages/                新規チャット、会話画面
+  sampleData.ts         表示用のサンプル会話
+  types/                チャットの型
+amplify/
+  auth/                 メール認証の設定
+  data/                 Conversation、Message、BedrockChatのスキーマ
+  function/bedrockChat/ Bedrock Converse APIを呼ぶLambda
+  backend.ts            AmplifyバックエンドとIAM権限
+amplify.yml             Amplify Hostingのビルド設定
 ```
